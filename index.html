@@ -602,7 +602,7 @@ async function callClaude(prompt, onChunk, onDone, onError) {
     const apiKey = localStorage.getItem('arrivar_waterfall_key');
     if (!apiKey) throw new Error('Silakan isi Waterfall API Key terlebih dahulu.');
 
-    const API_URL = 'https://api.waterfall.id/v1/chat/completions'; 
+    const API_URL = 'https://api.arrivar.id/v1/chat/completions'; 
 
     const res = await fetch(API_URL, {
       method: 'POST',
