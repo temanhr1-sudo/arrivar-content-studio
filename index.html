@@ -19,7 +19,7 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   html { font-size: 15px; }
   body {
-    background: var(--bg);
+    background: radial-gradient(circle at top right, #1a1a24 0%, var(--bg) 60%);
     color: var(--text);
     font-family: 'DM Sans', sans-serif;
     min-height: 100vh;
@@ -41,10 +41,12 @@
   header {
     display: flex; align-items: center; justify-content: space-between;
     padding: 1.1rem 2rem;
-    border-bottom: 1px solid var(--border);
-    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     position: sticky; top: 0; z-index: 100;
-    background: rgba(12,12,16,0.85);
+    background: rgba(9, 9, 11, 0.65);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
   }
   .logo { display: flex; align-items: center; gap: 10px; }
   .logo-mark {
@@ -94,9 +96,9 @@
   }
   .brand-btn:hover { border-color: var(--border2); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
   .brand-btn.active { 
-    border-color: var(--brand-c,var(--accent)); 
-    background: var(--brand-bg,var(--accent-lt)); 
-    box-shadow: 0 0 15px var(--brand-bg,var(--accent-lt));
+    border-color: var(--brand-c, var(--accent)); 
+    background: linear-gradient(to right, var(--brand-bg, var(--accent-lt)), transparent); 
+    box-shadow: inset 2px 0 0 var(--brand-c, var(--accent)), 0 8px 20px rgba(0,0,0,0.15);
   }
   .brand-icon {
     width: 32px; height: 32px; border-radius: 8px;
@@ -158,15 +160,22 @@
   /* Generate button */
   .gen-btn {
     width: 100%; padding: 14px;
-    background: linear-gradient(135deg, var(--accent), #5B21B6);
-    border: 1px solid rgba(255,255,255,0.1); border-radius: var(--radius-sm);
+    background: linear-gradient(135deg, var(--accent) 0%, #6D28D9 100%);
+    border: 1px solid rgba(139, 92, 246, 0.3); border-radius: var(--radius-sm);
     color: #fff; font-family: 'Syne', sans-serif;
     font-weight: 700; font-size: 14px; cursor: pointer;
-    transition: all .2s ease;
+    transition: all .3s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex; align-items: center; justify-content: center; gap: 8px;
-    letter-spacing: -.2px; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.25);
+    letter-spacing: -.2px; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.2);
+    position: relative; overflow: hidden;
   }
-  .gen-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(139, 92, 246, 0.45); filter: brightness(1.1); }
+  .gen-btn::after {
+    content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: all .5s ease;
+  }
+  .gen-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(139, 92, 246, 0.5); border-color: rgba(139, 92, 246, 0.6); }
+  .gen-btn:hover::after { left: 100%; }
   .gen-btn:active { transform: scale(.98); }
   .gen-btn:disabled { opacity: .5; cursor: not-allowed; }
   .gen-btn svg { width: 16px; height: 16px; }
@@ -200,13 +209,14 @@
 
   /* Content card */
   .result-card {
-    background: var(--surface); border: 1px solid var(--border);
+    background: rgba(18, 18, 23, 0.7); border: 1px solid rgba(255,255,255,0.06);
     border-radius: var(--radius); overflow: hidden;
-    animation: slideUp .4s cubic-bezier(0.16, 1, 0.3, 1) both;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    backdrop-filter: blur(10px);
+    animation: slideUp .5s cubic-bezier(0.16, 1, 0.3, 1) both;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05);
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   }
-  .result-card:hover { border-color: var(--border2); box-shadow: 0 12px 32px rgba(0,0,0,0.3); }
+  .result-card:hover { border-color: rgba(255,255,255,0.12); box-shadow: 0 15px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1); transform: translateY(-2px); }
   @keyframes slideUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:none} }
 
   .card-header {
@@ -602,7 +612,7 @@ async function callClaude(prompt, onChunk, onDone, onError) {
     const apiKey = localStorage.getItem('arrivar_waterfall_key');
     if (!apiKey) throw new Error('Silakan isi Waterfall API Key terlebih dahulu.');
 
-    const API_URL = 'https://api.arrivar.id/v1/chat/completions'; 
+    const API_URL = '/api/chat'; 
 
     const res = await fetch(API_URL, {
       method: 'POST',
