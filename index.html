@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arrivar Content Studio</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ig: #2581DA; --ig-lt: rgba(37, 129, 218, 0.15); --ig-dk: #0C447C;
+    --hr: #12A581; --hr-lt: rgba(18, 165, 129, 0.15); --hr-dk: #085041;
+    --ar: #6C63FF; --ar-lt: rgba(108, 99, 255, 0.15); --ar-dk: #3C3489;
+    --bg: #09090B; --surface: #121217; --surface2: #1A1A21;
+    --border: rgba(255,255,255,0.08); --border2: rgba(255,255,255,0.15);
+    --text: #FAFAFA; --muted: #A1A1AA; --faint: #27272A;
+    --accent: #8B5CF6; --accent-lt: rgba(139, 92, 246, 0.15);
+    --radius: 14px; --radius-sm: 10px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 15px; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── Grid noise texture ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 0;
+  }
+
+  /* ── Layout ── */
+  .shell { position: relative; z-index: 1; display: flex; flex-direction: column; min-height: 100vh; }
+
+  /* ── Header ── */
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.1rem 2rem;
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(12px);
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(12,12,16,0.85);
+  }
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo-mark {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: linear-gradient(135deg, #00d2ff, #3a7bd5);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif; font-weight: 800; font-size: 13px; color: #fff;
+  }
+  .logo-name { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 15px; letter-spacing: -.3px; }
+  .logo-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
+  .header-badge {
+    font-size: 11px; padding: 4px 10px; border-radius: 99px;
+    border: 1px solid var(--border2); color: var(--muted);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .live-dot { width: 6px; height: 6px; border-radius: 50%; background: #16a34a; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+  /* ── Main layout ── */
+  main { display: grid; grid-template-columns: 300px 1fr; flex: 1; }
+
+  /* ── Sidebar ── */
+  aside {
+    border-right: 1px solid var(--border);
+    padding: 1.5rem 1.25rem;
+    display: flex; flex-direction: column; gap: 1.5rem;
+    height: calc(100vh - 57px); overflow-y: auto;
+    position: sticky; top: 57px;
+  }
+  aside::-webkit-scrollbar { width: 4px; }
+  aside::-webkit-scrollbar-track { background: transparent; }
+  aside::-webkit-scrollbar-thumb { background: var(--faint); border-radius: 4px; }
+
+  .section-title {
+    font-size: 10px; font-weight: 600; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: .6rem;
+  }
+
+  /* Brand selector */
+  .brand-list { display: flex; flex-direction: column; gap: 6px; }
+  .brand-btn {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 14px; border-radius: var(--radius-sm);
+    border: 1px solid var(--border); background: var(--surface);
+    cursor: pointer; transition: all .25s ease; text-align: left; width: 100%;
+    color: var(--text); position: relative; overflow: hidden;
+  }
+  .brand-btn:hover { border-color: var(--border2); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+  .brand-btn.active { 
+    border-color: var(--brand-c,var(--accent)); 
+    background: var(--brand-bg,var(--accent-lt)); 
+    box-shadow: 0 0 15px var(--brand-bg,var(--accent-lt));
+  }
+  .brand-icon {
+    width: 32px; height: 32px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif; font-weight: 800; font-size: 11px; color: #fff;
+    flex-shrink: 0;
+  }
+  .brand-info { flex: 1; min-width: 0; }
+  .brand-info-name { font-size: 13px; font-weight: 500; }
+  .brand-info-sub { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* Platform pills */
+  .plat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .plat-btn {
+    display: flex; align-items: center; gap: 7px;
+    padding: 8px 10px; border-radius: var(--radius-sm);
+    border: 1px solid var(--border); background: transparent;
+    cursor: pointer; transition: all .18s; font-size: 12px; font-weight: 500;
+    color: var(--muted); width: 100%;
+  }
+  .plat-btn:hover { border-color: var(--border2); color: var(--text); background: var(--surface); }
+  .plat-btn.active { border-color: var(--accent); color: var(--text); background: var(--accent-lt); }
+  .plat-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+  /* Content type */
+  .type-list { display: flex; flex-direction: column; gap: 5px; }
+  .type-btn {
+    padding: 8px 12px; border-radius: var(--radius-sm);
+    border: 1px solid var(--border); background: transparent;
+    cursor: pointer; transition: all .15s; font-size: 12px;
+    color: var(--muted); text-align: left; width: 100%;
+  }
+  .type-btn:hover { border-color: var(--border2); color: var(--text); background: var(--surface); }
+  .type-btn.active { border-color: var(--accent); color: var(--text); background: var(--accent-lt); }
+
+  /* Topic input */
+  .topic-input {
+    width: 100%; padding: 10px 12px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); color: var(--text);
+    font-family: 'DM Sans', sans-serif; font-size: 13px;
+    resize: vertical; min-height: 80px;
+    transition: border-color .15s;
+  }
+  .topic-input:focus { outline: none; border-color: var(--accent); }
+  .topic-input::placeholder { color: var(--muted); }
+
+  /* Tone */
+  .tone-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; }
+  .tone-btn {
+    padding: 7px 6px; border-radius: var(--radius-sm);
+    border: 1px solid var(--border); background: transparent;
+    cursor: pointer; transition: all .15s; font-size: 11px;
+    color: var(--muted); text-align: center;
+  }
+  .tone-btn:hover { border-color: var(--border2); color: var(--text); }
+  .tone-btn.active { border-color: var(--accent); color: var(--text); background: var(--accent-lt); }
+
+  /* Generate button */
+  .gen-btn {
+    width: 100%; padding: 14px;
+    background: linear-gradient(135deg, var(--accent), #5B21B6);
+    border: 1px solid rgba(255,255,255,0.1); border-radius: var(--radius-sm);
+    color: #fff; font-family: 'Syne', sans-serif;
+    font-weight: 700; font-size: 14px; cursor: pointer;
+    transition: all .2s ease;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    letter-spacing: -.2px; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.25);
+  }
+  .gen-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(139, 92, 246, 0.45); filter: brightness(1.1); }
+  .gen-btn:active { transform: scale(.98); }
+  .gen-btn:disabled { opacity: .5; cursor: not-allowed; }
+  .gen-btn svg { width: 16px; height: 16px; }
+
+  /* ── Content area ── */
+  .content-area {
+    padding: 2rem;
+    display: flex; flex-direction: column; gap: 1.5rem;
+    overflow-y: auto; height: calc(100vh - 57px);
+  }
+  .content-area::-webkit-scrollbar { width: 4px; }
+  .content-area::-webkit-scrollbar-track { background: transparent; }
+  .content-area::-webkit-scrollbar-thumb { background: var(--faint); border-radius: 4px; }
+
+  /* Empty state */
+  .empty-state {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 1rem; text-align: center; padding: 4rem 2rem;
+    opacity: .6;
+  }
+  .empty-icon {
+    width: 64px; height: 64px; border-radius: 16px;
+    background: var(--surface2); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: .5rem;
+  }
+  .empty-icon svg { width: 28px; height: 28px; color: var(--accent); }
+  .empty-title { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 700; color: var(--text); }
+  .empty-sub { font-size: 13px; color: var(--muted); max-width: 320px; line-height: 1.6; }
+
+  /* Content card */
+  .result-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); overflow: hidden;
+    animation: slideUp .4s cubic-bezier(0.16, 1, 0.3, 1) both;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .result-card:hover { border-color: var(--border2); box-shadow: 0 12px 32px rgba(0,0,0,0.3); }
+  @keyframes slideUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:none} }
+
+  .card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: .9rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+  .card-meta { display: flex; align-items: center; gap: 10px; }
+  .brand-pill {
+    display: flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: 99px;
+    font-size: 11px; font-weight: 600; letter-spacing: .02em;
+  }
+  .plat-pill {
+    display: flex; align-items: center; gap: 5px;
+    padding: 4px 10px; border-radius: 99px;
+    background: var(--faint); font-size: 11px; color: var(--muted);
+  }
+  .plat-pill svg { width: 11px; height: 11px; }
+  .type-label { font-size: 11px; color: var(--muted); }
+  .card-actions { display: flex; gap: 6px; }
+  .action-btn {
+    padding: 5px 10px; border-radius: var(--radius-sm);
+    border: 1px solid var(--border); background: transparent;
+    color: var(--muted); font-size: 11px; cursor: pointer;
+    transition: all .15s; display: flex; align-items: center; gap: 5px;
+  }
+  .action-btn:hover { border-color: var(--border2); color: var(--text); background: var(--surface2); }
+  .action-btn.copied { border-color: #16a34a; color: #16a34a; }
+  .action-btn svg { width: 12px; height: 12px; }
+
+  /* Content body */
+  .card-body { padding: 1.25rem; }
+
+  .content-text {
+    font-size: 14px; line-height: 1.7; color: var(--text);
+    white-space: pre-wrap; word-break: break-word;
+  }
+
+  /* Streaming cursor */
+  .cursor { display: inline-block; width: 2px; height: 1em; background: var(--accent); animation: blink .8s step-end infinite; vertical-align: text-bottom; margin-left: 1px; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+  .card-footer {
+    padding: .75rem 1.25rem;
+    border-top: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--surface2);
+  }
+  .char-count { font-size: 11px; color: var(--muted); }
+  .char-count span { color: var(--text); font-weight: 500; }
+  .regen-btn {
+    font-size: 11px; color: var(--accent);
+    background: none; border: none; cursor: pointer; padding: 0;
+    display: flex; align-items: center; gap: 4px;
+    transition: opacity .15s;
+  }
+  .regen-btn:hover { opacity: .75; }
+  .regen-btn svg { width: 12px; height: 12px; }
+
+  /* Hashtag section */
+  .hashtag-row {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    padding: .75rem 1.25rem;
+    border-top: 1px solid var(--border);
+  }
+  .hashtag {
+    font-size: 11px; padding: 3px 9px; border-radius: 99px;
+    border: 1px solid var(--border); color: var(--accent);
+    cursor: pointer; transition: all .12s;
+  }
+  .hashtag:hover { background: var(--accent-lt); border-color: var(--accent); }
+
+  /* Loading state */
+  .loading-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 2rem;
+    display: flex; align-items: center; gap: 1rem;
+    animation: slideUp .3s ease both;
+  }
+  .spinner {
+    width: 20px; height: 20px; border-radius: 50%;
+    border: 2px solid var(--faint); border-top-color: var(--accent);
+    animation: spin .7s linear infinite; flex-shrink: 0;
+  }
+  @keyframes spin { to{transform:rotate(360deg)} }
+  .loading-text { font-size: 13px; color: var(--muted); }
+  .loading-text strong { color: var(--text); font-weight: 500; }
+
+  /* Batch header */
+  .batch-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-bottom: .5rem; border-bottom: 1px solid var(--border);
+  }
+  .batch-title { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; }
+  .batch-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .clear-btn {
+    font-size: 12px; color: var(--muted); background: none; border: none;
+    cursor: pointer; padding: 5px 8px; border-radius: var(--radius-sm);
+    transition: color .15s;
+  }
+  .clear-btn:hover { color: var(--text); }
+
+  /* Divider */
+  .divider { border: none; border-top: 1px solid var(--border); }
+
+  /* Scrollbar global */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--faint); border-radius: 4px; }
+
+  /* Mobile */
+  @media(max-width:768px){
+    main { grid-template-columns: 1fr; }
+    aside { height: auto; position: relative; top: 0; }
+    .content-area { height: auto; }
+    .plat-grid { grid-template-columns: repeat(3,1fr); }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+
+<header>
+  <div class="logo">
+    <div class="logo-mark" style="background: linear-gradient(135deg, #00d2ff, #3a7bd5);">W</div>
+    <div>
+      <div class="logo-name">Arrivar Content Studio</div>
+      <div class="logo-sub">Waterfall API Multi-Model Engine</div>
+    </div>
+  </div>
+  <div style="display: flex; gap: 12px; align-items: center;">
+    <input type="password" id="apiKeyInput" placeholder="Paste Waterfall API Key..." class="topic-input" style="min-height: 36px; height: 36px; padding: 0 14px; width: 240px; font-size: 12px; margin: 0; background: var(--surface2);" onchange="saveApiKey()" />
+    <div class="header-badge" id="statusBadge">
+      <div class="live-dot" style="background: #eab308;"></div>
+      Waterfall Key Required
+    </div>
+  </div>
+</header>
+
+<main>
+<aside>
+
+    <div>
+    <div class="section-title">Brand</div>
+    <div class="brand-list">
+      <button class="brand-btn active" data-brand="investguard" style="--brand-c:#185FA5;--brand-bg:rgba(24,95,165,0.12)" onclick="setBrand('investguard',this)">
+        <div class="brand-icon" style="background:linear-gradient(135deg,#185FA5,#0C447C)">IG</div>
+        <div class="brand-info">
+          <div class="brand-info-name">InvestGuard</div>
+          <div class="brand-info-sub">Investasi aman, kerjaan nyaman</div>
+        </div>
+      </button>
+      <button class="brand-btn" data-brand="temanhr" style="--brand-c:#0F6E56;--brand-bg:rgba(15,110,86,0.12)" onclick="setBrand('temanhr',this)">
+        <div class="brand-icon" style="background:linear-gradient(135deg,#0F6E56,#085041)">HR</div>
+        <div class="brand-info">
+          <div class="brand-info-name">Teman HR</div>
+          <div class="brand-info-sub">HR tools untuk UKM Indonesia</div>
+        </div>
+      </button>
+      <button class="brand-btn" data-brand="arrivar" style="--brand-c:#534AB7;--brand-bg:rgba(83,74,183,0.12)" onclick="setBrand('arrivar',this)">
+        <div class="brand-icon" style="background:linear-gradient(135deg,#534AB7,#3C3489)">ARR</div>
+        <div class="brand-info">
+          <div class="brand-info-name">Arrivar Indonesia</div>
+          <div class="brand-info-sub">Jasa website & aplikasi</div>
+        </div>
+      </button>
+    </div>
+  </div>
+
+    <div>
+    <div class="section-title">Platform</div>
+    <div class="plat-grid">
+      <button class="plat-btn active" data-plat="tiktok" onclick="setPlat('tiktok',this)">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.73a8.16 8.16 0 004.77 1.52V6.79a4.85 4.85 0 01-1-.1z"/></svg>
+        TikTok
+      </button>
+      <button class="plat-btn" data-plat="instagram" onclick="setPlat('instagram',this)">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+        Instagram
+      </button>
+      <button class="plat-btn" data-plat="threads" onclick="setPlat('threads',this)">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 10.56c-.13-.06-1.97-.93-3.98-.38-.23-1.06-.78-2.11-1.67-2.99-1.46-1.44-3.32-1.86-4.14-1.85-1.67.01-3.25.73-4.43 2.02a6.88 6.88 0 00-1.84 4.97c.07 2.64 1.46 4.77 3.83 5.96a7.34 7.34 0 003.09.66c1.6 0 3.26-.47 4.59-1.56 1.04-.85 1.72-1.99 2.04-3.37.71-.13 1.38-.47 1.98-.99.7-.61 1.08-1.4 1.08-2.23 0-.78-.35-1.7-.55-2.24zm-5.07 5.17c-.96.79-2.23 1.21-3.55 1.21-.81 0-1.66-.17-2.43-.52-1.77-.84-2.78-2.46-2.83-4.55a5.05 5.05 0 011.35-3.67 4.27 4.27 0 013.25-1.49c.65 0 1.95.3 3.08 1.42.77.76 1.23 1.65 1.39 2.64-1.02.1-1.89.55-2.47 1.26-.67.82-.91 1.95-.7 3.12.06.37.17.73.32 1.07-.15.18-.29.35-.41.51zm2.39-1.04c-.1.47-.36.88-.72 1.19-.35.3-.76.49-1.21.56a5.97 5.97 0 00-.22-.79c-.14-.43-.16-.85-.06-1.24.17-.65.64-.99 1.43-1.06.1-.01.21-.01.31-.01.3 0 .6.03.87.09.01.42-.12.87-.4 1.26z"/></svg>
+        Threads
+      </button>
+      <button class="plat-btn" data-plat="linkedin" onclick="setPlat('linkedin',this)">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+        LinkedIn
+      </button>
+      <button class="plat-btn" data-plat="twitter" onclick="setPlat('twitter',this)">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.735-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        Twitter / X
+      </button>
+    </div>
+  </div>
+
+    <div>
+    <div class="section-title">Tipe Konten</div>
+    <div class="type-list">
+      <button class="type-btn active" data-type="caption" onclick="setType('caption',this)">Caption / Post</button>
+      <button class="type-btn" data-type="hook" onclick="setType('hook',this)">Hook / Opening</button>
+      <button class="type-btn" data-type="thread" onclick="setType('thread',this)">Thread (3–7 poin)</button>
+      <button class="type-btn" data-type="story" onclick="setType('story',this)">Story / Script</button>
+      <button class="type-btn" data-type="promo" onclick="setType('promo',this)">Promosi / CTA</button>
+      <button class="type-btn" data-type="edukasi" onclick="setType('edukasi',this)">Edukasi / Tips</button>
+      <button class="type-btn" data-type="testimoni" onclick="setType('testimoni',this)">Testimoni Fiktif</button>
+    </div>
+  </div>
+
+    <div>
+    <div class="section-title">Topik / Konteks <span style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">(opsional)</span></div>
+    <textarea class="topic-input" id="topicInput" placeholder="Misal: analisa saham BBCA minggu ini, promo diskon 30%, fitur absensi baru, dll..."></textarea>
+  </div>
+
+    <div>
+    <div class="section-title">Tone</div>
+    <div class="tone-grid">
+      <button class="tone-btn active" data-tone="engaging" onclick="setTone('engaging',this)">Engaging</button>
+      <button class="tone-btn" data-tone="santai" onclick="setTone('santai',this)">Santai</button>
+      <button class="tone-btn" data-tone="profesional" onclick="setTone('profesional',this)">Profesional</button>
+      <button class="tone-btn" data-tone="hype" onclick="setTone('hype',this)">Hype</button>
+      <button class="tone-btn" data-tone="edukatif" onclick="setTone('edukatif',this)">Edukatif</button>
+      <button class="tone-btn" data-tone="storytelling" onclick="setTone('storytelling',this)">Storytelling</button>
+    </div>
+  </div>
+
+    <div style="display:flex;flex-direction:column;gap:8px">
+    <button class="gen-btn" id="genBtn" onclick="generate()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+      Generate Konten
+    </button>
+    <button class="gen-btn" id="genAllBtn" onclick="generateAll()" style="background:linear-gradient(135deg,#1D9E75,#085041);font-size:12px;padding:10px">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Generate Semua Platform Sekaligus
+    </button>
+  </div>
+
+</aside>
+
+<section class="content-area" id="contentArea">
+  <div class="empty-state" id="emptyState">
+    <div class="empty-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+    </div>
+    <div class="empty-title">Siap Generate Konten</div>
+    <div class="empty-sub">Pilih brand, platform, tipe konten, dan topik di sidebar — lalu tekan Generate. AI akan membuat konten yang disesuaikan untuk setiap platform.</div>
+  </div>
+</section>
+
+</main>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────────
+let state = { brand:'investguard', plat:'tiktok', type:'caption', tone:'engaging' };
+let results = [];
+
+// ── Waterfall API Key Management ─────────────────────────────────────────────
+function saveApiKey() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if (key) {
+    localStorage.setItem('arrivar_waterfall_key', key);
+    updateBadge(true);
+  } else {
+    localStorage.removeItem('arrivar_waterfall_key');
+    updateBadge(false);
+  }
+}
+
+function updateBadge(hasKey) {
+  const badge = document.getElementById('statusBadge');
+  if(hasKey) {
+    badge.innerHTML = `<div class="live-dot" style="background: #00d2ff;"></div> Waterfall Ready`;
+    badge.style.borderColor = "rgba(0, 210, 255, 0.3)";
+    badge.style.color = "#00d2ff";
+  } else {
+    badge.innerHTML = `<div class="live-dot" style="background: #eab308;"></div> Key Required`;
+    badge.style.borderColor = "var(--border2)";
+    badge.style.color = "var(--muted)";
+  }
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  const savedKey = localStorage.getItem('arrivar_waterfall_key');
+  if (savedKey) {
+    document.getElementById('apiKeyInput').value = savedKey;
+    updateBadge(true);
+  }
+});
+
+// ── Brand/Platform/Type/Tone Data ──────────────────────────────────────────────
+const BRANDS = {
+  investguard: {
+    name:'InvestGuard', color:'#185FA5', colorLt:'rgba(24,95,165,0.15)',
+    desc:'Platform AI untuk analisa saham IDX. Tagline: "Investasi aman, kerjaan nyaman." AI handle semua analisa — trade plan otomatis, skor emiten, portfolio manager. Target: investor retail IDX yang sibuk kerja.',
+    voice:'Confident, smart tapi relatable. Tidak teknikal berlebihan. Emphasize "biar AI yang kerja, kamu yang cuan". Bahasa Indonesia campuran sedikit English term investasi.',
+    hashtags:['#InvestasiAman','#SahamIDX','#AIInvestasi','#InvestGuard','#TradePlanOtomatis','#KerjaNyaman','#InvestasiOrangSibuk','#PortfolioManager','#SahamIndonesia','#IHSG'],
+    cta:'Coba gratis 7 hari di investguard.id'
+  },
+  temanhr: {
+    name:'Teman HR', color:'#0F6E56', colorLt:'rgba(15,110,86,0.15)',
+    desc:'Platform HR SaaS untuk UKM Indonesia. Produk: HRIS, absensi digital, slip gaji otomatis, analisa HR, dan marketplace kelas/e-book untuk karyawan. Dua target: HR manager UKM dan karyawan yang ingin naik level.',
+    voice:'Hangat, helpful, practical. Tidak korporat. Bahasa Indonesia yang mudah dipahami. Mix konten untuk HR manager (tools, efisiensi) dan karyawan (karier, skill).',
+    hashtags:['#TemanHR','#HRIndonesia','#ManajemenSDM','#HRIS','#TipsKarier','#UKMIndonesia','#KarirIndonesia','#TipsHR','#Karyawan','#SlipGaji'],
+    cta:'Coba gratis di temanhr.id'
+  },
+  arrivar: {
+    name:'Arrivar Indonesia', color:'#534AB7', colorLt:'rgba(83,74,183,0.15)',
+    desc:'Software house profesional. Jasa: pembuatan website company profile, landing page, web app, mobile app, e-commerce, CRM custom. Harga mulai Rp 5 jutaan, selesai 30 hari. Portofolio own product: InvestGuard dan Teman HR. GOAL UTAMA: closing klien, bukan edukasi.',
+    voice:'Sales-oriented, confident, proof-based. Tampilkan hasil nyata. CTA di setiap konten. Bahasa Indonesia yang direct dan persuasif. Buat calon klien merasa rugi kalau tidak hubungi sekarang.',
+    hashtags:['#JasaWebsite','#JasaAplikasi','#Arrivar','#WebsiteProfesional','#AplikasiCustom','#DigitalisasiUKM','#SoftwareHouse','#JasaIT','#BuatAplikasi','#WebDesignIndonesia'],
+    cta:'Konsultasi GRATIS di arrivar.id/konsultasi atau DM langsung'
+  }
+};
+
+const PLATFORMS = {
+  tiktok: { name:'TikTok', limit:2200, charInfo:'Max 2.200 karakter. Hook 3 detik pertama krusial. Buat CTA ke link bio.', icon:'<svg viewBox="0 0 24 24" fill="currentColor" width="11" height="11"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.73a8.16 8.16 0 004.77 1.52V6.79a4.85 4.85 0 01-1-.1z"/></svg>' },
+  instagram: { name:'Instagram', limit:2200, charInfo:'Max 2.200 karakter. Baris pertama adalah yang paling penting. Hashtag di akhir.', icon:'<svg viewBox="0 0 24 24" fill="currentColor" width="11" height="11"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>' },
+  threads: { name:'Threads', limit:500, charInfo:'Max 500 karakter per post. Langsung ke inti, no fluff. Bisa jadi thread berantai.', icon:'<svg viewBox="0 0 24 24" fill="currentColor" width="11" height="11"><path d="M19.59 10.56c-.13-.06-1.97-.93-3.98-.38-.23-1.06-.78-2.11-1.67-2.99-1.46-1.44-3.32-1.86-4.14-1.85-1.67.01-3.25.73-4.43 2.02a6.88 6.88 0 00-1.84 4.97c.07 2.64 1.46 4.77 3.83 5.96a7.34 7.34 0 003.09.66c1.6 0 3.26-.47 4.59-1.56 1.04-.85 1.72-1.99 2.04-3.37.71-.13 1.38-.47 1.98-.99.7-.61 1.08-1.4 1.08-2.23 0-.78-.35-1.7-.55-2.24zm-5.07 5.17c-.96.79-2.23 1.21-3.55 1.21-.81 0-1.66-.17-2.43-.52-1.77-.84-2.78-2.46-2.83-4.55a5.05 5.05 0 011.35-3.67 4.27 4.27 0 013.25-1.49c.65 0 1.95.3 3.08 1.42.77.76 1.23 1.65 1.39 2.64-1.02.1-1.89.55-2.47 1.26-.67.82-.91 1.95-.7 3.12.06.37.17.73.32 1.07-.15.18-.29.35-.41.51zm2.39-1.04c-.1.47-.36.88-.72 1.19-.35.3-.76.49-1.21.56a5.97 5.97 0 00-.22-.79c-.14-.43-.16-.85-.06-1.24.17-.65.64-.99 1.43-1.06.1-.01.21-.01.31-.01.3 0 .6.03.87.09.01.42-.12.87-.4 1.26z"/></svg>' },
+  linkedin: { name:'LinkedIn', limit:3000, charInfo:'Max 3.000 karakter. Profesional tapi tidak kaku. Hook di baris pertama sebelum "more".', icon:'<svg viewBox="0 0 24 24" fill="currentColor" width="11" height="11"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>' },
+  twitter: { name:'Twitter / X', limit:280, charInfo:'Max 280 karakter. Setiap kata harus ada nilainya. CTA singkat di akhir.', icon:'<svg viewBox="0 0 24 24" fill="currentColor" width="11" height="11"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.735-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>' }
+};
+
+const CONTENT_TYPES = {
+  caption:'caption/post standar dengan body copy dan CTA',
+  hook:'hook pembuka yang kuat untuk menarik perhatian dalam 3 detik pertama',
+  thread:'thread terstruktur dengan 3–7 poin bernomor, setiap poin 1–2 kalimat',
+  story:'script narasi storytelling untuk video pendek atau stories',
+  promo:'konten promosi/iklan dengan urgensi dan CTA yang kuat',
+  edukasi:'konten edukatif tips atau how-to yang memberikan nilai nyata',
+  testimoni:'testimoni fiktif yang realistis dari pengguna yang puas'
+};
+
+// ── UI setters ─────────────────────────────────────────────────────────────────
+function setBrand(b, el) {
+  state.brand = b;
+  document.querySelectorAll('.brand-btn').forEach(x => x.classList.remove('active'));
+  el.classList.add('active');
+}
+function setPlat(p, el) {
+  state.plat = p;
+  document.querySelectorAll('.plat-btn').forEach(x => x.classList.remove('active'));
+  el.classList.add('active');
+}
+function setType(t, el) {
+  state.type = t;
+  document.querySelectorAll('.type-btn').forEach(x => x.classList.remove('active'));
+  el.classList.add('active');
+}
+function setTone(t, el) {
+  state.tone = t;
+  document.querySelectorAll('.tone-btn').forEach(x => x.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// ── Prompt builder ─────────────────────────────────────────────────────────────
+function buildPrompt(brand, plat, type, tone, topic) {
+  const B = BRANDS[brand];
+  const P = PLATFORMS[plat];
+  const typeDesc = CONTENT_TYPES[type];
+  const topicLine = topic ? `\nTopik spesifik yang harus dibahas: ${topic}` : '';
+
+  return `Kamu adalah copywriter sosial media expert untuk startup Indonesia. Buat konten untuk brand berikut:
+
+BRAND: ${B.name}
+DESKRIPSI BRAND: ${B.desc}
+VOICE & TONE BRAND: ${B.voice}
+CTA STANDAR: ${B.cta}
+
+PLATFORM: ${P.name}
+ATURAN PLATFORM: ${P.charInfo}
+
+TIPE KONTEN: ${typeDesc}
+TONE YANG DIMINTA: ${tone}${topicLine}
+
+INSTRUKSI PENTING:
+- Tulis HANYA konten jadinya saja, tanpa penjelasan atau label apapun
+- Sesuaikan panjang dengan batas karakter platform (${P.limit} karakter)
+- Gunakan emoji yang relevan secara strategis, jangan berlebihan
+- Sertakan 5–8 hashtag yang relevan di bagian akhir (kecuali Twitter/X maksimal 2–3)
+- Konten harus langsung bisa di-copy-paste dan posting
+- Bahasa Indonesia yang natural, bukan terjemahan kaku
+- Untuk Arrivar: selalu ada urgensi dan CTA yang jelas untuk konsultasi/pemesanan
+- Untuk InvestGuard: selalu ada angle "AI yang kerja, kamu yang tenang/cuan"
+- Untuk Teman HR: balance antara konten untuk HR manager dan karyawan
+- JANGAN sertakan label "Caption:", "Konten:", dll. Langsung tulis isi kontennya.`;
+}
+
+// ── Waterfall API Call (OpenAI Format) ───────────────────────────────────────
+async function callClaude(prompt, onChunk, onDone, onError) {
+  try {
+    const apiKey = localStorage.getItem('arrivar_waterfall_key');
+    if (!apiKey) throw new Error('Silakan isi Waterfall API Key terlebih dahulu.');
+
+    const API_URL = 'https://api.waterfall.id/v1/chat/completions'; 
+
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: 'claude-3-5-sonnet-latest',
+        stream: true,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || 'API error'); }
+
+    const reader = res.body.getReader();
+    const dec = new TextDecoder();
+    let buf = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const lines = buf.split('\n');
+      buf = lines.pop();
+
+      for (const line of lines) {
+        const cleanLine = line.replace(/^data: /, '').trim();
+        if (!cleanLine || cleanLine === '[DONE]') continue;
+        
+        try {
+          const j = JSON.parse(cleanLine);
+          const content = j.choices[0]?.delta?.content;
+          if (content) onChunk(content);
+        } catch (e) {}
+      }
+    }
+    onDone();
+  } catch(e) { onError(e.message); }
+}
+
+// ── Render helpers ─────────────────────────────────────────────────────────────
+function hideEmpty() {
+  const e = document.getElementById('emptyState');
+  if (e) e.style.display = 'none';
+}
+
+function makeCardId() { return 'card_' + Date.now() + '_' + Math.random().toString(36).slice(2,6); }
+
+function createLoadingCard(brand, plat, type) {
+  const B = BRANDS[brand], P = PLATFORMS[plat];
+  const id = makeCardId();
+  const div = document.createElement('div');
+  div.className = 'loading-card';
+  div.id = id;
+  div.innerHTML = `
+    <div class="spinner"></div>
+    <div class="loading-text">Generating <strong>${B.name}</strong> · ${P.name} · ${type}...</div>`;
+  return { el: div, id };
+}
+
+function createResultCard(brand, plat, type, text) {
+  const B = BRANDS[brand], P = PLATFORMS[plat];
+  const id = makeCardId();
+  const div = document.createElement('div');
+  div.className = 'result-card';
+  div.id = id;
+
+  const tags = B.hashtags.slice(0,6).map(h =>
+    `<span class="hashtag" onclick="appendHashtag(this,'${id}')">${h}</span>`).join('');
+
+  div.innerHTML = `
+    <div class="card-header">
+      <div class="card-meta">
+        <span class="brand-pill" style="background:${B.colorLt};color:${B.color}">${B.name}</span>
+        <span class="plat-pill">${P.icon} ${P.name}</span>
+        <span class="type-label">${type}</span>
+      </div>
+      <div class="card-actions">
+        <button class="action-btn" onclick="copyCard('${id}')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          Copy
+        </button>
+        <button class="action-btn" onclick="deleteCard('${id}')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="content-text" id="text_${id}">${text}<span class="cursor"></span></div>
+    </div>
+    <div class="hashtag-row">${tags}</div>
+    <div class="card-footer">
+      <div class="char-count">Karakter: <span id="chars_${id}">${text.length}</span> / ${P.limit}</div>
+      <button class="regen-btn" onclick="regenCard('${id}','${brand}','${plat}','${type}')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+        Regenerate
+      </button>
+    </div>`;
+  return { el: div, id };
+}
+
+function finishCard(id) {
+  const textEl = document.getElementById('text_' + id);
+  if (textEl) {
+    const cursor = textEl.querySelector('.cursor');
+    if (cursor) cursor.remove();
+  }
+}
+
+// ── Copy / Delete / Regen ──────────────────────────────────────────────────────
+function copyCard(id) {
+  const textEl = document.getElementById('text_' + id);
+  if (!textEl) return;
+  const text = textEl.innerText.replace(/\u200B/g,'').trim();
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector(`#${id} .action-btn`);
+    if (btn) { btn.classList.add('copied'); btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12"><polyline points="20 6 9 17 4 12"/></svg> Copied!`; setTimeout(()=>{ btn.classList.remove('copied'); btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copy`; }, 2000); }
+  });
+}
+
+function deleteCard(id) {
+  const el = document.getElementById(id);
+  if (el) { el.style.opacity = '0'; el.style.transform = 'translateX(20px)'; el.style.transition = 'all .2s'; setTimeout(()=>el.remove(), 200); }
+}
+
+function appendHashtag(el, id) {
+  const textEl = document.getElementById('text_' + id);
+  if (!textEl) return;
+  const tag = el.textContent;
+  if (!textEl.innerText.includes(tag)) {
+    textEl.innerText += ' ' + tag;
+    updateCharCount(id);
+  }
+}
+
+function updateCharCount(id) {
+  const textEl = document.getElementById('text_' + id);
+  const charEl = document.getElementById('chars_' + id);
+  if (textEl && charEl) charEl.textContent = textEl.innerText.replace(/\u200B/g,'').trim().length;
+}
+
+async function regenCard(id, brand, plat, type) {
+  const textEl = document.getElementById('text_' + id);
+  if (!textEl) return;
+  const topic = document.getElementById('topicInput').value;
+  const prompt = buildPrompt(brand, plat, type, state.tone, topic);
+  textEl.innerHTML = '<span class="cursor"></span>';
+  let fullText = '';
+  await callClaude(prompt,
+    chunk => { fullText += chunk; textEl.innerHTML = fullText + '<span class="cursor"></span>'; updateCharCount(id); },
+    () => { finishCard(id); updateCharCount(id); },
+    err => { textEl.innerHTML = `<span style="color:#E24B4A">Error: ${err}</span>`; }
+  );
+}
+
+// ── Clear all ──────────────────────────────────────────────────────────────────
+function clearAll() {
+  const area = document.getElementById('contentArea');
+  area.innerHTML = `<div class="empty-state" id="emptyState">
+    <div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
+    <div class="empty-title">Siap Generate Konten</div>
+    <div class="empty-sub">Pilih brand, platform, tipe konten, dan topik di sidebar — lalu tekan Generate.</div>
+  </div>`;
+}
+
+// ── Generate single ────────────────────────────────────────────────────────────
+async function generate() {
+  const { brand, plat, type, tone } = state;
+  const topic = document.getElementById('topicInput').value;
+  const btn = document.getElementById('genBtn');
+  btn.disabled = true;
+  hideEmpty();
+
+  const area = document.getElementById('contentArea');
+
+  // Add batch header if first result
+  if (!document.querySelector('.batch-header')) {
+    const hdr = document.createElement('div');
+    hdr.className = 'batch-header';
+    hdr.innerHTML = `<div><div class="batch-title">Hasil Generate</div><div class="batch-sub">Klik hashtag untuk menambahkan ke konten</div></div><button class="clear-btn" onclick="clearAll()">Hapus semua</button>`;
+    area.prepend(hdr);
+  }
+
+  // Loading card
+  const { el: loadEl, id: loadId } = createLoadingCard(brand, plat, type);
+  area.appendChild(loadEl);
+  loadEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+  const prompt = buildPrompt(brand, plat, type, tone, topic);
+  let fullText = '';
+
+  await callClaude(prompt,
+    chunk => {
+      fullText += chunk;
+      // Replace loading card with result card on first chunk
+      const existing = document.getElementById(loadId);
+      if (existing && existing.className === 'loading-card') {
+        const { el: resultEl, id: resultId } = createResultCard(brand, plat, type, '');
+        existing.replaceWith(resultEl);
+        const textEl = document.getElementById('text_' + resultId);
+        if (textEl) { textEl.innerHTML = fullText + '<span class="cursor"></span>'; updateCharCount(resultId); }
+        // Store resultId for subsequent chunks
+        existing._resultId = resultId;
+        loadEl._resultId = resultId;
+      } else {
+        // Find the result card
+        const rId = loadEl._resultId;
+        if (rId) {
+          const textEl = document.getElementById('text_' + rId);
+          if (textEl) { textEl.innerHTML = fullText + '<span class="cursor"></span>'; updateCharCount(rId); }
+        }
+      }
+    },
+    () => {
+      const rId = loadEl._resultId;
+      if (rId) finishCard(rId);
+      btn.disabled = false;
+    },
+    err => {
+      const existing = document.getElementById(loadId);
+      if (existing) existing.innerHTML = `<div style="color:#E24B4A;font-size:13px;padding:.5rem">Error: ${err}</div>`;
+      btn.disabled = false;
+    }
+  );
+}
+
+// ── Generate all platforms ─────────────────────────────────────────────────────
+async function generateAll() {
+  const { brand, type, tone } = state;
+  const topic = document.getElementById('topicInput').value;
+  const btn = document.getElementById('genAllBtn');
+  btn.disabled = true;
+  hideEmpty();
+
+  const area = document.getElementById('contentArea');
+  if (!document.querySelector('.batch-header')) {
+    const hdr = document.createElement('div');
+    hdr.className = 'batch-header';
+    hdr.innerHTML = `<div><div class="batch-title">Hasil Generate — Semua Platform</div><div class="batch-sub">Klik hashtag untuk menambahkan ke konten</div></div><button class="clear-btn" onclick="clearAll()">Hapus semua</button>`;
+    area.prepend(hdr);
+  }
+
+  const platforms = ['tiktok','instagram','threads','linkedin','twitter'];
+
+  // Generate all in parallel with individual streaming
+  const promises = platforms.map(async (plat) => {
+    const { el: loadEl, id: loadId } = createLoadingCard(brand, plat, type);
+    area.appendChild(loadEl);
+    const prompt = buildPrompt(brand, plat, type, tone, topic);
+    let fullText = '';
+    let resultId = null;
+
+    await callClaude(prompt,
+      chunk => {
+        fullText += chunk;
+        const existing = document.getElementById(loadId);
+        if (existing && existing.className === 'loading-card') {
+          const { el: resultEl, id: rId } = createResultCard(brand, plat, type, '');
+          resultId = rId;
+          existing.replaceWith(resultEl);
+          const textEl = document.getElementById('text_' + rId);
+          if (textEl) { textEl.innerHTML = fullText + '<span class="cursor"></span>'; updateCharCount(rId); }
+          loadEl._resultId = rId;
+        } else {
+          const rId = loadEl._resultId || resultId;
+          if (rId) {
+            const textEl = document.getElementById('text_' + rId);
+            if (textEl) { textEl.innerHTML = fullText + '<span class="cursor"></span>'; updateCharCount(rId); }
+          }
+        }
+      },
+      () => {
+        const rId = loadEl._resultId || resultId;
+        if (rId) finishCard(rId);
+      },
+      err => {
+        const existing = document.getElementById(loadId);
+        if (existing) existing.innerHTML = `<div style="color:#E24B4A;font-size:13px;padding:1rem">Error: ${err}</div>`;
+      }
+    );
+  });
+
+  await Promise.allSettled(promises);
+  btn.disabled = false;
+  area.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+</script>
+</body>
+</html>
